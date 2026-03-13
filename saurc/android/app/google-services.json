@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "836945471405",
+    "project_id": "saurc-42a13",
+    "storage_bucket": "saurc-42a13.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:836945471405:android:50d4b2fecefa52dc8e2324",
+        "android_client_info": {
+          "package_name": "com.saurc.app.saurc"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDIQnzBFrlcKXJ_nAgM0IAZJYs9Aw68Dcc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
