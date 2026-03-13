@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'home_dark_screen.dart'; // Importación necesaria para la redirección
+import 'home_dark_screen.dart'; 
 
 class RegisterDarkScreen extends StatefulWidget {
   const RegisterDarkScreen({super.key});
@@ -21,7 +21,7 @@ class _RegisterDarkScreenState extends State<RegisterDarkScreen> {
   final _confirmPasswordController = TextEditingController();
 
   bool _isLoading = false;
-  bool _acceptTerms = false; // Estado del checkbox
+  bool _acceptTerms = false;
 
   @override
   void dispose() {
@@ -34,9 +34,7 @@ class _RegisterDarkScreenState extends State<RegisterDarkScreen> {
     super.dispose();
   }
 
-  // Validación de seguridad de contraseña
   bool _isPasswordSecure(String pass) {
-    // Mínimo 8 caracteres, una letra y un número
     final RegExp passwordRegExp = RegExp(r'^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$');
     return passwordRegExp.hasMatch(pass);
   }
@@ -44,14 +42,13 @@ class _RegisterDarkScreenState extends State<RegisterDarkScreen> {
   Future<void> _signUp() async {
     FocusScope.of(context).unfocus();
 
-    // VALIDACIONES
     if (!_acceptTerms) {
       _showError("Debes aceptar los términos y condiciones");
       return;
     }
 
     if (!_isPasswordSecure(_passwordController.text)) {
-      _showError("La contraseña debe tener al menos 8 caracteres, incluyendo letras y números");
+      _showError("La contraseña debe tener al menos 8 caracteres, letras y números");
       return;
     }
 
@@ -68,7 +65,6 @@ class _RegisterDarkScreenState extends State<RegisterDarkScreen> {
         password: _passwordController.text.trim(),
       );
 
-      // Guardar en Firestore
       await FirebaseFirestore.instance.collection('usuarios').doc(userCredential.user!.uid).set({
         'nombres': _nameController.text.trim(),
         'apellidos': _lastNameController.text.trim(),
@@ -79,10 +75,7 @@ class _RegisterDarkScreenState extends State<RegisterDarkScreen> {
       });
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("¡Registro exitoso!")),
-        );
-        // REDIRECCIÓN DIRECTA AL HOME (reemplaza la pantalla actual)
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("¡Registro exitoso!")));
         Navigator.pushAndRemoveUntil(
           context,
           MaterialPageRoute(builder: (context) => const HomeDarkScreen()),
@@ -110,51 +103,48 @@ class _RegisterDarkScreenState extends State<RegisterDarkScreen> {
     final colors = Theme.of(context).colorScheme;
     
     return Scaffold(
-      backgroundColor: const Color(0xFF0A0E21),
+      backgroundColor: colors.surface, // Hereda el fondo oscuro del sistema
       appBar: AppBar(backgroundColor: Colors.transparent, elevation: 0),
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 30),
         child: Column(
           children: [
-            const Text("Crear Cuenta", 
-              style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white)
+            Text("Crear Cuenta", 
+              style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: colors.onSurface)
             ),
             const SizedBox(height: 30),
             
-            _buildTextField("Nombres", Icons.person, controller: _nameController),
-            _buildTextField("Apellidos", Icons.person, controller: _lastNameController),
-            _buildTextField("Correo electrónico", Icons.email, controller: _emailController, type: TextInputType.emailAddress),
-            _buildTextField("Número de teléfono", Icons.phone, controller: _phoneController, type: TextInputType.phone),
-            _buildTextField("Contraseña", Icons.lock, controller: _passwordController, isPass: true),
-            _buildTextField("Repetir contraseña", Icons.lock_reset, controller: _confirmPasswordController, isPass: true),
+            _buildTextField("Nombres", Icons.person, controller: _nameController, colors: colors),
+            _buildTextField("Apellidos", Icons.person, controller: _lastNameController, colors: colors),
+            _buildTextField("Correo electrónico", Icons.email, controller: _emailController, type: TextInputType.emailAddress, colors: colors),
+            _buildTextField("Número de teléfono", Icons.phone, controller: _phoneController, type: TextInputType.phone, colors: colors),
+            _buildTextField("Contraseña", Icons.lock, controller: _passwordController, isPass: true, colors: colors),
+            _buildTextField("Repetir contraseña", Icons.lock_reset, controller: _confirmPasswordController, isPass: true, colors: colors),
             
             const SizedBox(height: 10),
 
-            // SECCIÓN TÉRMINOS Y CONDICIONES
             Row(
               children: [
                 Checkbox(
                   value: _acceptTerms,
                   onChanged: (val) => setState(() => _acceptTerms = val!),
-                  checkColor: Colors.white,
+                  checkColor: colors.onPrimary,
                   activeColor: colors.primary,
-                  side: const BorderSide(color: Colors.white54),
+                  side: BorderSide(color: colors.onSurface.withOpacity(0.5)),
                 ),
                 Expanded(
                   child: RichText(
                     text: TextSpan(
                       text: "Acepto los ",
-                      style: const TextStyle(color: Colors.white70, fontSize: 13),
+                      style: TextStyle(color: colors.onSurface.withOpacity(0.7), fontSize: 13),
                       children: [
                         TextSpan(
                           text: "términos y condiciones",
                           style: TextStyle(color: colors.primary, fontWeight: FontWeight.bold),
                           recognizer: TapGestureRecognizer()
                             ..onTap = () async {
-                              final url = Uri.parse('https://www.ejemplo.com');
-                              if (await canLaunchUrl(url)) {
-                                await launchUrl(url);
-                              }
+                              final url = Uri.parse('https://www.google.com'); // Cambia por tu URL real
+                              if (await canLaunchUrl(url)) await launchUrl(url);
                             },
                         ),
                       ],
@@ -167,12 +157,12 @@ class _RegisterDarkScreenState extends State<RegisterDarkScreen> {
             const SizedBox(height: 30),
             
             _isLoading 
-              ? const CircularProgressIndicator()
+              ? CircularProgressIndicator(color: colors.primary)
               : ElevatedButton(
                   onPressed: _signUp,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: colors.primary,
-                    foregroundColor: Colors.white,
+                    foregroundColor: colors.onPrimary,
                     minimumSize: const Size(double.infinity, 55),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
                   ),
@@ -185,20 +175,25 @@ class _RegisterDarkScreenState extends State<RegisterDarkScreen> {
     );
   }
 
-  Widget _buildTextField(String hint, IconData icon, {required TextEditingController controller, bool isPass = false, TextInputType type = TextInputType.text}) {
+  Widget _buildTextField(String hint, IconData icon, {
+    required TextEditingController controller, 
+    required ColorScheme colors,
+    bool isPass = false, 
+    TextInputType type = TextInputType.text
+  }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 15),
       child: TextField(
         controller: controller,
         obscureText: isPass,
         keyboardType: type,
-        style: const TextStyle(color: Colors.white),
+        style: TextStyle(color: colors.onSurface),
         decoration: InputDecoration(
           hintText: hint,
-          hintStyle: const TextStyle(color: Colors.white54),
-          prefixIcon: Icon(icon, color: Colors.blueAccent),
+          hintStyle: TextStyle(color: colors.onSurface.withOpacity(0.4)),
+          prefixIcon: Icon(icon, color: colors.primary),
           filled: true,
-          fillColor: Colors.white.withOpacity(0.1),
+          fillColor: colors.onSurface.withOpacity(0.05),
           border: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: BorderSide.none),
         ),
       ),
