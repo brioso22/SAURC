@@ -9,6 +9,7 @@ import 'package:share_plus/share_plus.dart';
 import 'post_create_dark_screen.dart'; 
 import 'help_dark_screen.dart';        
 import 'settings_dark_screen.dart';    
+import 'maps_dark_screen.dart'; // <--- Nueva importación
 
 class HomeDarkScreen extends StatefulWidget {
   const HomeDarkScreen({super.key});
@@ -20,8 +21,10 @@ class HomeDarkScreen extends StatefulWidget {
 class _HomeDarkScreenState extends State<HomeDarkScreen> {
   int _selectedIndex = 0;
 
+  // Lista de pantallas actualizada
   final List<Widget> _screens = [
     const GlobalPostsScreen(),           
+    const MapsDarkScreen(), // <--- Añadida la pantalla del mapa
     const PostCreateDarkScreen(),        
     const HelpDarkScreen(),              
     const SettingsDarkScreen(),          
@@ -56,6 +59,7 @@ class _HomeDarkScreenState extends State<HomeDarkScreen> {
         indicatorColor: colors.primary.withOpacity(0.2),
         destinations: const [
           NavigationDestination(icon: Icon(Icons.forum_outlined), label: 'Posts'),
+          NavigationDestination(icon: Icon(Icons.map_outlined), label: 'Mapa'), // <--- Nuevo botón
           NavigationDestination(icon: Icon(Icons.add_circle_outline), label: 'Denunciar'),
           NavigationDestination(icon: Icon(Icons.help_outline), label: 'Ayuda'),
           NavigationDestination(icon: Icon(Icons.settings_outlined), label: 'Config'),
@@ -64,6 +68,8 @@ class _HomeDarkScreenState extends State<HomeDarkScreen> {
     );
   }
 }
+
+// --- PANTALLA DE POSTS GLOBALES ---
 
 class GlobalPostsScreen extends StatelessWidget {
   const GlobalPostsScreen({super.key});
@@ -92,6 +98,8 @@ class GlobalPostsScreen extends StatelessWidget {
   }
 }
 
+// --- WIDGET DE POST INDIVIDUAL ---
+
 class PostWidget extends StatelessWidget {
   final String docId;
   final Map<String, dynamic> data;
@@ -115,7 +123,7 @@ class PostWidget extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       decoration: BoxDecoration(
-        color: colors.surfaceContainerHighest.withOpacity(0.3), // Adaptativo
+        color: colors.surfaceContainerHighest.withOpacity(0.3),
         borderRadius: BorderRadius.circular(25),
         border: Border.all(color: colors.outlineVariant.withOpacity(0.2)),
       ),
@@ -198,6 +206,8 @@ class PostWidget extends StatelessWidget {
     );
   }
 }
+
+// --- SECCIÓN DE COMENTARIOS ---
 
 class _CommentsSection extends StatefulWidget {
   final String postId;
