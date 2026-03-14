@@ -88,25 +88,34 @@ class _PostCreateDarkScreenState extends State<PostCreateDarkScreen> {
     }
   }
 
+  // CORRECCIÓN: Manejo robusto de la cámara para evitar cierres en dispositivos como Moto g04
   Future<void> _pickImage(ImageSource source) async {
     try {
-      final pickedFile = await _picker.pickImage(
+      FocusScope.of(context).unfocus(); // Quitar teclado/foco antes de abrir cámara
+
+      final XFile? pickedFile = await _picker.pickImage(
         source: source,
         imageQuality: 40,
         maxWidth: 800,    
       );
 
-      if (pickedFile != null) {
-        final file = File(pickedFile.path);
+      if (pickedFile == null) return;
+
+      final file = File(pickedFile.path);
+      
+      if (await file.exists()) {
         final bytes = await file.length();
-        if (bytes > 600000) { 
-          _showErrorSnackBar("Imagen demasiado grande.");
+        if (bytes > 800000) { 
+          _showErrorSnackBar("La imagen es muy pesada para el servidor.");
           return;
         }
-        if (mounted) setState(() => _imageFile = file);
+        if (mounted) {
+          setState(() => _imageFile = file);
+        }
       }
     } catch (e) {
-      _showErrorSnackBar("Error al seleccionar imagen.");
+      debugPrint("Error en ImagePicker: $e");
+      _showErrorSnackBar("Error al abrir la cámara o galería.");
     }
   }
 
@@ -184,7 +193,7 @@ class _PostCreateDarkScreenState extends State<PostCreateDarkScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // CARD DE INFO DE USUARIO Y GPS
+            // INFO CARD (Adaptativa)
             Card(
               color: colors.surfaceContainerLow,
               elevation: 0,
@@ -219,25 +228,31 @@ class _PostCreateDarkScreenState extends State<PostCreateDarkScreen> {
                 ),
               ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 25),
 
             Text("1. Foto de la Evidencia", 
-              style: textTheme.titleSmall?.copyWith(color: colors.onSurfaceVariant)),
-            const SizedBox(height: 10),
+              style: textTheme.titleSmall?.copyWith(color: colors.onSurfaceVariant, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 12),
             
             if (_imageFile != null)
               Container(
-                height: 200,
-                margin: const EdgeInsets.only(bottom: 10),
+                height: 220,
+                margin: const EdgeInsets.only(bottom: 15),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(15),
                   image: DecorationImage(image: FileImage(_imageFile!), fit: BoxFit.cover),
                   border: Border.all(color: colors.outlineVariant),
+                  boxShadow: [
+                    BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 10, offset: const Offset(0, 4))
+                  ]
                 ),
                 child: Align(
                   alignment: Alignment.topRight,
                   child: IconButton(
-                    icon: const Icon(Icons.cancel, color: Colors.red),
+                    icon: const CircleAvatar(
+                      backgroundColor: Colors.red,
+                      child: Icon(Icons.close, color: Colors.white, size: 18),
+                    ),
                     onPressed: () => setState(() => _imageFile = null),
                   ),
                 ),
@@ -253,33 +268,35 @@ class _PostCreateDarkScreenState extends State<PostCreateDarkScreen> {
                     style: ElevatedButton.styleFrom(
                         backgroundColor: colors.primaryContainer, 
                         foregroundColor: colors.onPrimaryContainer, 
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))
+                        padding: const EdgeInsets.symmetric(vertical: 15),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))
                     ),
                   ),
                 ),
-                const SizedBox(width: 10),
+                const SizedBox(width: 12),
                 Expanded(
                   child: ElevatedButton.icon(
                     onPressed: () => _pickImage(ImageSource.gallery),
                     icon: const Icon(Icons.photo_library),
                     label: const Text("Galería"),
                     style: ElevatedButton.styleFrom(
-                        backgroundColor: colors.primaryContainer, 
-                        foregroundColor: colors.onPrimaryContainer, 
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))
+                        backgroundColor: colors.secondaryContainer, 
+                        foregroundColor: colors.onSecondaryContainer, 
+                        padding: const EdgeInsets.symmetric(vertical: 15),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))
                     ),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 25),
+            const SizedBox(height: 30),
 
             Text("2. Clasificación de la Denuncia", 
-              style: textTheme.titleSmall?.copyWith(color: colors.onSurfaceVariant)),
-            const SizedBox(height: 10),
+              style: textTheme.titleSmall?.copyWith(color: colors.onSurfaceVariant, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 12),
             DropdownButtonFormField<String>(
               value: _selectedCategory,
-              hint: Text("Seleccionar tipo", style: TextStyle(color: colors.onSurfaceVariant)),
+              hint: Text("Seleccionar tipo", style: TextStyle(color: colors.onSurfaceVariant.withOpacity(0.7))),
               dropdownColor: colors.surfaceContainerHigh,
               style: TextStyle(color: colors.onSurface),
               decoration: _buildInputDecoration(Icons.category, colors),
@@ -294,20 +311,20 @@ class _PostCreateDarkScreenState extends State<PostCreateDarkScreen> {
                 child: TextField(
                   controller: _otherCategoryController,
                   style: TextStyle(color: colors.onSurface),
-                  decoration: _buildInputDecoration(Icons.edit_note, colors).copyWith(hintText: "Especifique el tipo de problema"),
+                  decoration: _buildInputDecoration(Icons.edit_note, colors).copyWith(hintText: "Especifique el problema"),
                 ),
               ),
-            const SizedBox(height: 25),
+            const SizedBox(height: 30),
 
             Text("3. Descripción Detallada (Opcional)", 
-              style: textTheme.titleSmall?.copyWith(color: colors.onSurfaceVariant)),
-            const SizedBox(height: 10),
+              style: textTheme.titleSmall?.copyWith(color: colors.onSurfaceVariant, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 12),
             TextField(
               controller: _descriptionController,
-              maxLines: 4,
+              maxLines: 3,
               maxLength: 300,
               style: TextStyle(color: colors.onSurface),
-              decoration: _buildInputDecoration(Icons.description, colors).copyWith(hintText: "Explique brevemente el problema"),
+              decoration: _buildInputDecoration(Icons.description, colors).copyWith(hintText: "Explique brevemente qué sucede"),
             ),
             const SizedBox(height: 40),
 
@@ -318,12 +335,13 @@ class _PostCreateDarkScreenState extends State<PostCreateDarkScreen> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.green,
                       foregroundColor: Colors.white,
-                      minimumSize: const Size(double.infinity, 55),
+                      minimumSize: const Size(double.infinity, 60),
+                      elevation: 2,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
                     ),
-                    child: const Text("ENVIAR DENUNCIA", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                    child: const Text("ENVIAR DENUNCIA", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 1.2)),
                   ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 30),
           ],
         ),
       ),
@@ -336,6 +354,7 @@ class _PostCreateDarkScreenState extends State<PostCreateDarkScreen> {
       fillColor: colors.surfaceContainerLow,
       prefixIcon: Icon(icon, color: colors.primary),
       border: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: BorderSide.none),
+      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: BorderSide(color: colors.primary, width: 1.5)),
       hintStyle: TextStyle(color: colors.onSurfaceVariant.withOpacity(0.5)),
     );
   }
