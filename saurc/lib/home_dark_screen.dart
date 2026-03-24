@@ -37,34 +37,76 @@ class _HomeDarkScreenState extends State<HomeDarkScreen> {
     return Scaffold(
       backgroundColor: colors.surface,
       appBar: AppBar(
-        title: Text("SAURC", 
-          style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.5, color: colors.primary)
-        ),
-        centerTitle: true,
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: CircleAvatar(
-            backgroundColor: colors.primary.withOpacity(0.1), 
-            child: Icon(Icons.person, color: colors.primary, size: 20)
-          ),
-        ),
+  // 1. Quitamos Colors.transparent para que use el color #121212 del tema
+  title: const Text(
+    "SAURC",
+    style: TextStyle(
+      fontWeight: FontWeight.bold,
+      letterSpacing: 1.5,
+      // Quitamos 'color: colors.primary' para que use el blanco (#FFFFFF) de tu diseño
+    ),
+  ),
+  centerTitle: true,
+  
+  // 2. Quitamos el backgroundColor manual para que herede el del Theme
+  elevation: 0, 
+
+  // 3. El avatar de la izquierda con tus colores de Figma
+  leading: Padding(
+    padding: const EdgeInsets.all(8.0),
+    child: CircleAvatar(
+      // Usamos el gris azulado (#94A3B8) de tus "pelotitas"
+      backgroundColor: const Color(0xFF94A3B8).withValues(alpha: 0.2), 
+      child: const Icon(
+        Icons.person, 
+        color: Color(0xFF94A3B8), 
+        size: 20
       ),
+    ),
+  ),
+  
+  // 4. Toque extra: un botón de notificaciones o búsqueda a la derecha
+  actions: [
+    IconButton(
+      icon: const Icon(Icons.search, color: Color(0xFF94A3B8)),
+      onPressed: () {},
+    ),
+  ],
+),
       body: IndexedStack(index: _selectedIndex, children: _screens),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _selectedIndex,
-        onDestinationSelected: (i) => setState(() => _selectedIndex = i),
-        backgroundColor: colors.surface,
-        indicatorColor: colors.primary.withOpacity(0.2),
-        destinations: const [
-          NavigationDestination(icon: Icon(Icons.forum_outlined), label: 'Posts'),
-          NavigationDestination(icon: Icon(Icons.map_outlined), label: 'Mapa'), // <--- Nuevo botón
-          NavigationDestination(icon: Icon(Icons.add_circle_outline), label: 'Denunciar'),
-          NavigationDestination(icon: Icon(Icons.help_outline), label: 'Ayuda'),
-          NavigationDestination(icon: Icon(Icons.settings_outlined), label: 'Config'),
-        ],
-      ),
+     bottomNavigationBar: NavigationBar(
+  selectedIndex: _selectedIndex,
+  onDestinationSelected: (i) => setState(() => _selectedIndex = i),
+
+  // Agregamos 'const' aquí al inicio de la lista para limpiar todas las líneas azules de los hijos
+  destinations: const [
+    NavigationDestination(
+      icon: Icon(Icons.forum_outlined, color: Color(0xFF94A3B8)),
+      selectedIcon: Icon(Icons.forum, color: Color(0xFF4A90E2)),
+      label: 'Posts',
+    ),
+    NavigationDestination(
+      icon: Icon(Icons.map_outlined, color: Color(0xFF94A3B8)),
+      selectedIcon: Icon(Icons.map, color: Color(0xFF4A90E2)),
+      label: 'Mapa',
+    ),
+    NavigationDestination(
+      icon: Icon(Icons.add_circle_outline, color: Color(0xFF94A3B8)),
+      selectedIcon: Icon(Icons.add_circle, color: Color(0xFF4A90E2)),
+      label: 'Denunciar',
+    ),
+    NavigationDestination(
+      icon: Icon(Icons.help_outline, color: Color(0xFF94A3B8)),
+      selectedIcon: Icon(Icons.help, color: Color(0xFF4A90E2)),
+      label: 'Ayuda',
+    ),
+    NavigationDestination(
+      icon: Icon(Icons.settings_outlined, color: Color(0xFF94A3B8)),
+      selectedIcon: Icon(Icons.settings, color: Color(0xFF4A90E2)),
+      label: 'Config',
+    ),
+  ],
+),
     );
   }
 }

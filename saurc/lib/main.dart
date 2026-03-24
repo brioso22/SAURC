@@ -29,22 +29,84 @@ class SAURCApp extends StatelessWidget {
       theme: ThemeData(
         useMaterial3: true,
         brightness: Brightness.light,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF002868),
-          brightness: Brightness.light,
-        ),
-      ),
+        scaffoldBackgroundColor: const Color(0xFFEFEFEF), // Fondo EFEFEF
 
-      // TEMA OSCURO (Principal para SAURC)
-      darkTheme: ThemeData(
-        useMaterial3: true,
-        brightness: Brightness.dark,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF002868),
-          brightness: Brightness.dark,
-          surface: const Color(0xFF011638),
+        colorScheme: const ColorScheme.light(
+          primary: Color(0xFF0047AB),      // Azul Institucional
+          surface: Color(0xFFFFFFFF),      // Fondo de Tarjetas Blanco
+          onSurface: Colors.black87,
+          outline: Color(0xFFD5D5D5),      // Iconos inactivos
+        ),
+
+        appBarTheme: const AppBarTheme(
+          backgroundColor: Color(0xFF0047AB),
+          foregroundColor: Colors.white,
+          elevation: 0,
+          centerTitle: true,
+        ),
+
+        navigationBarTheme: NavigationBarThemeData(
+  backgroundColor: const Color(0xFFF1FAFC), // El color claro de tu Figma
+  indicatorColor: Colors.transparent, 
+  
+  // Forzamos el color de las etiquetas (textos)
+  labelTextStyle: WidgetStateProperty.resolveWith((states) {
+    if (states.contains(WidgetState.selected)) {
+      return const TextStyle(color: Color(0xFF0047AB), fontWeight: FontWeight.bold);
+    }
+    return const TextStyle(color: Color(0xFF94A3B8)); // Gris para los no seleccionados
+  }),
+
+  // Forzamos el color de los iconos
+  iconTheme: WidgetStateProperty.resolveWith((states) {
+    if (states.contains(WidgetState.selected)) {
+      return const IconThemeData(color: Color(0xFF0047AB), size: 28);
+    }
+    return const IconThemeData(color: Color(0xFF94A3B8)); // Color de las "pelotitas"
+  }),
+),
+
+        cardTheme: const CardThemeData(
+          color: Color(0xFFFFFFFF),
+          elevation: 1,
         ),
       ),
+      // TEMA OSCURO
+      darkTheme: ThemeData(
+    useMaterial3: true,
+    brightness: Brightness.dark,
+    scaffoldBackgroundColor: const Color(0xFF121212), // Tu fondo oscuro de Figma
+
+    colorScheme: const ColorScheme.dark(
+      primary: Color(0xFF4A90E2),      // Azul más brillante para modo oscuro
+      surface: Color(0xFF1E1E1E),      // Fondo de tarjetas oscuro
+      onSurface: Colors.white,
+      outline: Color(0xFF94A3B8),      // Gris de iconos
+    ),
+
+    appBarTheme: const AppBarTheme(
+      backgroundColor: Color(0xFF121212),
+      foregroundColor: Colors.white,
+      elevation: 0,
+    ),
+
+    navigationBarTheme: NavigationBarThemeData(
+      backgroundColor: const Color(0xFF121212),
+      indicatorColor: Colors.transparent,
+      labelTextStyle: WidgetStateProperty.resolveWith((states) {
+        if (states.contains(WidgetState.selected)) {
+          return const TextStyle(color: Color(0xFF4A90E2), fontWeight: FontWeight.bold);
+        }
+        return const TextStyle(color: Color(0xFF94A3B8));
+      }),
+      iconTheme: WidgetStateProperty.resolveWith((states) {
+        if (states.contains(WidgetState.selected)) {
+          return const IconThemeData(color: Color(0xFF4A90E2), size: 28);
+        }
+        return const IconThemeData(color: Color(0xFF94A3B8));
+      }),
+    ),
+  ),
 
       themeMode: ThemeMode.system, // Hereda el modo del sistema
 
