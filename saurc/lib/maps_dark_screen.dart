@@ -1,143 +1,220 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:geolocator/geolocator.dart';
 
-class MapsDarkScreen extends StatelessWidget {
+class MapsDarkScreen extends StatefulWidget {
   const MapsDarkScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
+  State<MapsDarkScreen> createState() => _MapsDarkScreenState();
+}
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text("Mapa de Transparencia", style: TextStyle(fontSize: 16)),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        centerTitle: true,
-      ),
-      body: StreamBuilder<QuerySnapshot>(
-        // Esta línea es la "magia": escucha la misma colección donde PostCreate sube los datos
-        stream: FirebaseFirestore.instance.collection('denuncias').snapshots(),
-        builder: (context, snapshot) {
-          if (snapshot.hasError) return const Center(child: Text("Error al cargar datos"));
-          
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
+class _MapsDarkScreenState extends State<MapsDarkScreen> {
+  LatLng? _userLocation;
+  double _radioBusqueda = 5.0; 
+  final MapController _mapController = MapController();
+  final Distance _distanceCalculator = const Distance();
 
-          // Transformamos cada documento de Firebase en un marcador del mapa
-          final markers = snapshot.data!.docs.map((doc) {
-            final data = doc.data() as Map<String, dynamic>;
-            
-            // Extraemos el GeoPoint que creaste en PostCreateDarkScreen
-            final GeoPoint? geoPoint = data['coordenadas'] as GeoPoint?;
-
-            // Si por alguna razón el reporte no tiene coordenadas, saltamos ese punto
-            if (geoPoint == null) return null;
-
-            return Marker(
-              point: LatLng(geoPoint.latitude, geoPoint.longitude),
-              width: 45,
-              height: 45,
-              child: GestureDetector(
-                onTap: () => _mostrarDetalleDenuncia(context, data, colors),
-                child: MouseRegion(
-                  cursor: SystemMouseCursors.click,
-                  child: Icon(
-                    Icons.location_on,
-                    color: _getColorPorEstado(data['estado']), // Color dinámico según estado
-                    size: 35,
-                    shadows: const [
-                      Shadow(color: Colors.black45, blurRadius: 8, offset: Offset(0, 2))
-                    ],
-                  ),
-                ),
-              ),
-            );
-          }).whereType<Marker>().toList(); // Limpiamos los nulos
-
-          return FlutterMap(
-            options: const MapOptions(
-              initialCenter: LatLng(13.7942, -88.8965), // El Salvador
-              initialZoom: 8.5,
-              minZoom: 4,
-            ),
-            children: [
-              TileLayer(
-                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                userAgentPackageName: 'com.saurc.app.saurc',
-                // Tu filtro de modo oscuro que tanto te gustó
-                tileBuilder: (context, tileWidget, tile) {
-                  return ColorFiltered(
-                    colorFilter: const ColorFilter.matrix([
-                      -0.2126, -0.7152, -0.0722, 0, 255,
-                      -0.2126, -0.7152, -0.0722, 0, 255,
-                      -0.2126, -0.7152, -0.0722, 0, 255,
-                      0,       0,       0,       1, 0,
-                    ]),
-                    child: tileWidget,
-                  );
-                },
-              ),
-              MarkerLayer(markers: markers),
-            ],
-          );
-        },
-      ),
-    );
+  @override
+  void initState() {
+    super.initState();
+    _determinePosition();
   }
 
-  // Función para dar color según el estado de la denuncia (Pendiente, Resuelto, etc.)
-  Color _getColorPorEstado(String? estado) {
-    switch (estado) {
-      case 'Pendiente': return Colors.redAccent;
-      case 'En Proceso': return Colors.orangeAccent;
-      case 'Resuelto': return Colors.greenAccent;
-      default: return Colors.blueAccent;
+  Future<void> _determinePosition() async {
+    bool serviceEnabled;
+    LocationPermission permission;
+
+    serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) return;
+
+    permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied) return;
+    }
+    
+    Position position = await Geolocator.getCurrentPosition();
+    if (!mounted) return;
+    setState(() {
+      _userLocation = LatLng(position.latitude, position.longitude);
+    });
+  }
+
+  void _regresarAMiUbicacion() {
+    if (_userLocation != null) {
+      _mapController.move(_userLocation!, 15.0);
     }
   }
 
-  // Muestra la información de la denuncia al tocar el punto
-  void _mostrarDetalleDenuncia(BuildContext context, Map<String, dynamic> data, ColorScheme colors) {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      appBar: AppBar(
+        title: const Text("Mapa de Transparencia", 
+          style: TextStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.w300)),
+        backgroundColor: Colors.black,
+        elevation: 0,
+        centerTitle: true,
+      ),
+      body: _userLocation == null
+          ? const Center(child: CircularProgressIndicator(color: Colors.blueAccent))
+          : Stack(
+              children: [
+                StreamBuilder<QuerySnapshot>(
+                  stream: FirebaseFirestore.instance.collection('denuncias').snapshots(),
+                  builder: (context, snapshot) {
+                    List<Marker> markers = [];
+                    if (snapshot.hasData) {
+                      markers = snapshot.data!.docs.map((doc) {
+                        final data = doc.data() as Map<String, dynamic>;
+                        final GeoPoint? geo = data['coordenadas'];
+                        if (geo == null) return null;
+
+                        final punto = LatLng(geo.latitude, geo.longitude);
+                        final dist = _distanceCalculator.as(LengthUnit.Kilometer, _userLocation!, punto);
+                        
+                        // Solo mostramos denuncias dentro del radio del slider
+                        if (dist > _radioBusqueda) return null;
+
+                        return Marker(
+                          point: punto,
+                          width: 45,
+                          height: 45,
+                          child: GestureDetector(
+                            onTap: () => _mostrarDetalle(context, data),
+                            child: Icon(Icons.location_on, color: _getColor(data['estado']), size: 35),
+                          ),
+                        );
+                      }).whereType<Marker>().toList();
+                    }
+
+                    return FlutterMap(
+                      mapController: _mapController,
+                      options: MapOptions(
+                        initialCenter: _userLocation!, 
+                        initialZoom: 14,
+                        interactionOptions: const InteractionOptions(
+                          flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
+                        ),
+                      ),
+                      children: [
+                        TileLayer(
+                          urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                          userAgentPackageName: 'com.saurc.app.saurc',
+                          tileProvider: NetworkTileProvider(),
+                          tileBuilder: (context, tileWidget, tile) => ColorFiltered(
+                            colorFilter: const ColorFilter.matrix([
+                              -0.2126, -0.7152, -0.0722, 0, 255,
+                              -0.2126, -0.7152, -0.0722, 0, 255,
+                              -0.2126, -0.7152, -0.0722, 0, 255,
+                              0, 0, 0, 1, 0,
+                            ]),
+                            child: tileWidget,
+                          ),
+                        ),
+                        CircleLayer(
+                          circles: [
+                            CircleMarker(
+                              point: _userLocation!,
+                              radius: _radioBusqueda * 1000,
+                              useRadiusInMeter: true,
+                              color: Colors.blue.withOpacity(0.1),
+                              borderColor: Colors.blueAccent.withOpacity(0.4),
+                              borderStrokeWidth: 2,
+                            ),
+                          ],
+                        ),
+                        MarkerLayer(markers: markers),
+                      ],
+                    );
+                  },
+                ),
+                
+                // Botón para volver a ubicación actual (Ajuste 2)
+                Positioned(
+                  right: 20,
+                  bottom: 120,
+                  child: FloatingActionButton(
+                    mini: true,
+                    backgroundColor: Colors.blueAccent,
+                    elevation: 5,
+                    child: const Icon(Icons.my_location, color: Colors.white),
+                    onPressed: _regresarAMiUbicacion,
+                  ),
+                ),
+
+                // Control de Rango (Slider) - Ajuste 1
+                Positioned(
+                  bottom: 40, left: 20, right: 20,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.85),
+                      borderRadius: BorderRadius.circular(25),
+                      border: Border.all(color: Colors.white12),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.radar, color: Colors.blueAccent, size: 20),
+                        Expanded(
+                          child: Slider(
+                            value: _radioBusqueda,
+                            min: 0.5, max: 20.0,
+                            activeColor: Colors.blueAccent,
+                            inactiveColor: Colors.white24,
+                            onChanged: (v) => setState(() => _radioBusqueda = v),
+                          ),
+                        ),
+                        Text(
+                          _radioBusqueda < 1 
+                              ? "${(_radioBusqueda * 1000).toInt()}m" 
+                              : "${_radioBusqueda.toStringAsFixed(1)}km",
+                          style: const TextStyle(
+                            color: Colors.white, 
+                            fontSize: 12, 
+                            fontWeight: FontWeight.bold,
+                            fontFamily: 'monospace' // Estilo técnico que te gusta
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                )
+              ],
+            ),
+    );
+  }
+
+  Color _getColor(String? e) {
+    if (e == 'Resuelto') return Colors.greenAccent;
+    if (e == 'En Proceso') return Colors.orangeAccent;
+    return Colors.redAccent;
+  }
+
+  void _mostrarDetalle(BuildContext context, Map<String, dynamic> data) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: colors.surfaceContainerHigh,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(25))),
+      backgroundColor: const Color(0xFF121212),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(25))
+      ),
       builder: (context) => Padding(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(25),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: Text(data['categoria'] ?? "Denuncia", 
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 20)),
-                ),
-                Chip(
-                  label: Text(data['estado'] ?? "Pendiente", style: const TextStyle(fontSize: 12)),
-                  backgroundColor: _getColorPorEstado(data['estado']).withOpacity(0.2),
-                  side: BorderSide(color: _getColorPorEstado(data['estado'])),
-                )
-              ],
-            ),
-            const Divider(height: 30),
-            Text("Descripción:", style: TextStyle(color: colors.primary, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 5),
-            Text(data['descripcion'] == "" ? "Sin descripción detallada." : data['descripcion']),
+            Text(data['categoria'] ?? "Reporte", 
+                style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 15),
-            Row(
-              children: [
-                Icon(Icons.person, size: 16, color: colors.onSurfaceVariant),
-                const SizedBox(width: 8),
-                Text("Por: ${data['nombre_usuario']}", style: TextStyle(color: colors.onSurfaceVariant)),
-              ],
-            ),
-            const SizedBox(height: 20),
+            Text(data['descripcion'] ?? "Sin descripción.", 
+                style: const TextStyle(color: Colors.white70)),
+            const SizedBox(height: 30),
           ],
         ),
       ),
