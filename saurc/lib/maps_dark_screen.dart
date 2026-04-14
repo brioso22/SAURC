@@ -143,8 +143,8 @@ class _MapsDarkScreenState extends State<MapsDarkScreen> {
                     mini: true,
                     backgroundColor: Colors.blueAccent,
                     elevation: 5,
-                    child: const Icon(Icons.my_location, color: Colors.white),
                     onPressed: _regresarAMiUbicacion,
+                    child: const Icon(Icons.my_location, color: Colors.white),
                   ),
                 ),
 

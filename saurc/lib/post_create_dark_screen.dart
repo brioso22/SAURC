@@ -295,7 +295,7 @@ class _PostCreateDarkScreenState extends State<PostCreateDarkScreen> {
               style: textTheme.titleSmall?.copyWith(color: colors.onSurfaceVariant, fontWeight: FontWeight.bold)),
             const SizedBox(height: 12),
             DropdownButtonFormField<String>(
-              value: _selectedCategory,
+              initialValue: _selectedCategory,
               hint: Text("Seleccionar tipo", style: TextStyle(color: colors.onSurfaceVariant.withOpacity(0.7))),
               dropdownColor: colors.surfaceContainerHigh,
               style: TextStyle(color: colors.onSurface),

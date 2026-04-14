@@ -34,8 +34,9 @@ class _LoginDarkScreenState extends State<LoginDarkScreen> {
       }
     } on FirebaseAuthException catch (e) {
       String message = "Ocurrió un error";
-      if (e.code == 'user-not-found') message = "Usuario no encontrado";
-      else if (e.code == 'wrong-password') message = "Contraseña incorrecta";
+      if (e.code == 'user-not-found') {
+        message = "Usuario no encontrado";
+      } else if (e.code == 'wrong-password') message = "Contraseña incorrecta";
       
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
